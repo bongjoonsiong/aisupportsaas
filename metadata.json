@@ -1,0 +1,6 @@
+{
+  "name": "OmniDesk AI",
+  "description": "Production-ready AI Customer Support SaaS platform with multi-tenant workspace, custom knowledge training, customizable embed widgets, live agent handoff, and real-time conversation sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
