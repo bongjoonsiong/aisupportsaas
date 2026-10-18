@@ -13,6 +13,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useBot } from '../context/BotContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export type NavTab = 'inbox' | 'bots' | 'training' | 'customizer' | 'embed' | 'leads' | 'settings';
 
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenPricing
 }) => {
   const { conversations, leads } = useBot();
+  const { t } = useLanguage();
 
   const waitingCount = conversations.filter(c => c.status === 'waiting_human').length;
   const newLeadsCount = leads.filter(l => l.status === 'new').length;
@@ -39,44 +41,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     {
       id: 'inbox' as NavTab,
-      label: 'Live Inbox',
+      label: t('sidebar.inbox'),
       icon: Inbox,
-      badge: waitingCount > 0 ? `${waitingCount} urgent` : conversations.filter(c => c.unreadByAgent).length || undefined,
+      badge: waitingCount > 0 ? `${waitingCount} ${t('sidebar.urgentBadge')}` : conversations.filter(c => c.unreadByAgent).length || undefined,
       badgeVariant: waitingCount > 0 ? 'urgent' : 'default'
     },
     {
       id: 'bots' as NavTab,
-      label: 'AI Chatbots',
+      label: t('sidebar.bots'),
       icon: Bot,
     },
     {
       id: 'training' as NavTab,
-      label: 'Knowledge & AI',
+      label: t('sidebar.training'),
       icon: BrainCircuit,
     },
     {
       id: 'customizer' as NavTab,
-      label: 'Widget Studio',
+      label: t('sidebar.customizer'),
       icon: Palette,
     },
     {
       id: 'embed' as NavTab,
-      label: 'Embed Code',
+      label: t('sidebar.embed'),
       icon: Code2,
     },
     {
       id: 'leads' as NavTab,
-      label: 'Leads & Analytics',
+      label: t('sidebar.leads'),
       icon: Users,
-      badge: newLeadsCount > 0 ? `${newLeadsCount} new` : undefined,
+      badge: newLeadsCount > 0 ? `${newLeadsCount} ${t('sidebar.newBadge')}` : undefined,
       badgeVariant: 'success'
     },
     {
       id: 'settings' as NavTab,
-      label: 'Settings & Team',
+      label: t('sidebar.settings'),
       icon: Settings,
     },
   ];
+
 
   return (
     <aside className="w-64 bg-[#1E293B] flex flex-col shrink-0 text-white border-r border-slate-700">
@@ -145,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <Globe className="w-4 h-4 text-slate-400" />
-            <span>← Back to Website</span>
+            <span>← {t('sidebar.backToSite')}</span>
           </button>
         )}
 
@@ -156,11 +159,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-blue-400 fill-current" />
-              <span>Subscription Plans</span>
+              <span>{t('sidebar.pricing')}</span>
             </div>
             <span className="text-[9px] bg-blue-500 text-slate-950 font-black px-1.5 py-0.5 rounded">UPGRADE</span>
           </button>
         )}
+
       </div>
 
       {/* Footer Info / Gemini Status & Org */}

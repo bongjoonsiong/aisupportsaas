@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../common/LanguageSelector';
 import { 
   Zap, 
   Sparkles, 
@@ -12,6 +14,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+
 
 interface PublicNavbarProps {
   currentTab: 'home' | 'pricing' | 'features' | 'demo';
@@ -29,6 +32,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   onOpenLiveSimulator
 }) => {
   const { user, currentOrg } = useAuth();
+  const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -49,7 +53,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <span className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
               OmniDesk <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">AI</span>
             </span>
-            <p className="text-[10px] text-slate-400 font-medium leading-none">Autonomous Support Platform</p>
+            <p className="text-[10px] text-slate-400 font-medium leading-none">{t('nav.tagline')}</p>
           </div>
         </div>
 
@@ -63,7 +67,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            Home
+            {t('nav.home')}
           </button>
 
           <button
@@ -74,7 +78,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            Features &amp; RAG
+            {t('nav.features')}
           </button>
 
           <button
@@ -85,7 +89,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            Pricing Plans
+            {t('nav.pricing')}
           </button>
 
           <button
@@ -93,20 +97,23 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-blue-600 hover:bg-white/80 transition-all flex items-center gap-1"
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Live Interactive Demo</span>
+            <span>{t('nav.demo')}</span>
           </button>
         </nav>
 
         {/* Right CTA / Auth Controls */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Language Selector Dropdown */}
+          <LanguageSelector variant="light" />
+
           {user ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={onGoToDashboard}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-sm hover:shadow"
+                className="inline-flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-sm hover:shadow"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span>Go to Dashboard</span>
+                <span>{t('nav.dashboard')}</span>
                 <span className="hidden sm:inline text-[10px] bg-blue-500/50 px-1.5 py-0.5 rounded font-black uppercase">
                   {currentOrg.name}
                 </span>
@@ -116,16 +123,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <>
               <button
                 onClick={onOpenAuthModal}
-                className="hidden sm:inline-flex px-3.5 py-2 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+                className="hidden sm:inline-flex px-3 py-2 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
               >
-                Customer Sign In
+                {t('nav.login')}
               </button>
 
               <button
                 onClick={onOpenAuthModal}
-                className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-sm hover:shadow"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold transition-all shadow-sm hover:shadow"
               >
-                <span>Start Free Trial</span>
+                <span>{t('nav.startTrial')}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </>
@@ -135,6 +142,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -154,7 +162,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               currentTab === 'home' ? 'bg-blue-50 text-blue-600 font-black' : 'text-slate-700 hover:bg-slate-50'
             }`}
           >
-            <span>Home</span>
+            <span>{t('nav.home')}</span>
           </button>
 
           <button
@@ -166,7 +174,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               currentTab === 'features' ? 'bg-blue-50 text-blue-600 font-black' : 'text-slate-700 hover:bg-slate-50'
             }`}
           >
-            <span>Features &amp; RAG Architecture</span>
+            <span>{t('nav.features')}</span>
           </button>
 
           <button
@@ -178,7 +186,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               currentTab === 'pricing' ? 'bg-blue-50 text-blue-600 font-black' : 'text-slate-700 hover:bg-slate-50'
             }`}
           >
-            <span>Pricing Plans</span>
+            <span>{t('nav.pricing')}</span>
           </button>
 
           <button
@@ -189,7 +197,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-2"
           >
             <Sparkles className="w-4 h-4 text-emerald-600" />
-            <span>Interactive Live Storefront Simulator</span>
+            <span>{t('nav.demo')}</span>
           </button>
 
           {!user && (
@@ -201,12 +209,13 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 }}
                 className="w-full py-2.5 text-center text-sm font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200"
               >
-                Sign In to Customer Workspace
+                {t('nav.login')}
               </button>
             </div>
           )}
         </div>
       )}
+
     </header>
   );
 };

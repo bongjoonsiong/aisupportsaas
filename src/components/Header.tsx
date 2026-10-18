@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBot } from '../context/BotContext';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSelector } from './common/LanguageSelector';
 import { 
   Bot, 
   ChevronDown, 
@@ -16,6 +18,7 @@ import {
   ExternalLink,
   ShieldAlert
 } from 'lucide-react';
+
 
 interface HeaderProps {
   onOpenWidgetSimulator: () => void;
@@ -34,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { user, currentOrg, toggleOnlineStatus, logout, loginAsDemo } = useAuth();
   const { chatbots, activeBot, setActiveBot, conversations } = useBot();
+  const { t } = useLanguage();
 
   const [showBotDropdown, setShowBotDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -43,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center justify-between z-30 sticky top-0">
+
       {/* Left: Organization & Bot Selector */}
       <div className="flex items-center gap-3 md:gap-4">
         {/* Workspace / Org */}
@@ -201,38 +206,41 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      {/* Right: Actions, Live Simulator Button, Agent Status, Profile */}
-      <div className="flex items-center gap-3 md:gap-4">
+      {/* Right: Actions, Live Simulator Button, Agent Status, Language, Profile */}
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-3.5">
+        {/* Language Selector Dropdown */}
+        <LanguageSelector variant="light" />
+
         {/* Create New Bot Button */}
         <button
           onClick={onOpenNewBotModal}
-          className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs md:text-sm font-semibold transition-colors shadow-sm"
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs md:text-sm font-semibold transition-colors shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>New Bot</span>
+          <span>{t('header.createBot')}</span>
         </button>
 
         {/* Live Widget Simulator Button */}
         <button
           onClick={onOpenWidgetSimulator}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs md:text-sm font-semibold shadow-sm transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs md:text-sm font-semibold shadow-sm transition-colors"
         >
           <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-          <span>Test Live Widget</span>
+          <span className="hidden lg:inline">{t('header.testSimulator')}</span>
         </button>
 
         {/* Agent Online / Offline Toggle */}
         <button
           onClick={toggleOnlineStatus}
           title={user?.isOnline ? 'Online - Receiving live chats' : 'Offline - Automated AI mode'}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
             user?.isOnline 
               ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
               : 'bg-slate-100 border-slate-200 text-slate-600'
           }`}
         >
           <Circle className={`w-2 h-2 fill-current ${user?.isOnline ? 'text-emerald-500' : 'text-slate-400'}`} />
-          <span className="hidden md:inline">{user?.isOnline ? 'Agent Online' : 'Agent Away'}</span>
+          <span className="hidden md:inline">{user?.isOnline ? t('header.onlineStatus') : t('header.awayStatus')}</span>
         </button>
 
         {/* Escalation alert badge */}
@@ -242,9 +250,10 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold animate-pulse"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-            <span>{waitingCount} Urgent</span>
+            <span>{waitingCount} {t('sidebar.urgentBadge')}</span>
           </div>
         )}
+
 
         {/* User Profile Menu */}
         <div className="relative">

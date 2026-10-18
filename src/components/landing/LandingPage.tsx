@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBot } from '../../context/BotContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Zap, 
   Sparkles, 
@@ -40,8 +41,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const { user } = useAuth();
   const { activeBot, sendVisitorMessage } = useBot();
+  const { t } = useLanguage();
 
   // Interactive Hero Chat State
+
   const [heroMessages, setHeroMessages] = useState<Array<{ sender: 'bot' | 'visitor'; text: string; sources?: string[] }>>([
     {
       sender: 'bot',
@@ -119,18 +122,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-xs">
                 <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                <span>Powered by Gemini 2.5 Flash &amp; Instant RAG</span>
+                <span>{t('hero.badge')}</span>
               </div>
 
               {/* Headline */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
-                Autonomous AI Support for{' '}
-                <span className="text-blue-600">Every Business</span>
+                {t('hero.title')}{' '}
+                <span className="text-blue-600">{t('hero.titleHighlight')}</span>
               </h1>
 
               {/* Sub-headline */}
               <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Train custom, branded AI support agents on your website URLs, menus, catalogs, listings, and FAQ docs in under 2 minutes. Deflect 90%+ of tickets, capture leads, and seamlessly escalate to humans across <strong>E-Commerce, SaaS, F&amp;B, Real Estate, &amp; Financial Advisory</strong>.
+                {t('hero.subtitle')}
               </p>
 
               {/* Action Buttons */}
@@ -140,7 +143,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onGoToDashboard}
                     className="w-full sm:w-auto px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
                   >
-                    <span>Enter Your Tenant Dashboard</span>
+                    <span>{t('nav.dashboard')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
@@ -148,7 +151,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onOpenAuthModal}
                     className="w-full sm:w-auto px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
                   >
-                    <span>Start 14-Day Free Trial</span>
+                    <span>{t('hero.ctaPrimary')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
@@ -158,7 +161,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-xl font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-4 h-4 text-blue-600" />
-                  <span>Interactive Fullscreen Demo</span>
+                  <span>{t('hero.ctaSecondary')}</span>
                 </button>
               </div>
 
@@ -181,19 +184,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Key Metrics Strip */}
               <div className="pt-6 border-t border-slate-200/80 grid grid-cols-3 gap-4 text-left">
                 <div>
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900 block">92.4%</span>
-                  <span className="text-[11px] text-slate-500 font-medium">Autonomous Deflection</span>
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 block">{t('hero.statsDeflection')}</span>
+                  <span className="text-[11px] text-slate-500 font-medium">{t('hero.statsDeflectionDesc')}</span>
                 </div>
                 <div>
-                  <span className="text-2xl sm:text-3xl font-black text-blue-600 block">&lt; 1.8s</span>
-                  <span className="text-[11px] text-slate-500 font-medium">Avg. AI Response</span>
+                  <span className="text-2xl sm:text-3xl font-black text-blue-600 block">{t('hero.statsSpeed')}</span>
+                  <span className="text-[11px] text-slate-500 font-medium">{t('hero.statsSpeedDesc')}</span>
                 </div>
                 <div>
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900 block">14.2M+</span>
-                  <span className="text-[11px] text-slate-500 font-medium">Chats Handled</span>
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 block">{t('hero.statsAvailability')}</span>
+                  <span className="text-[11px] text-slate-500 font-medium">{t('hero.statsAvailabilityDesc')}</span>
                 </div>
               </div>
             </div>
+
 
             {/* Right Column: Real-time Live Interactive Hero Chatbot */}
             <div className="lg:col-span-5">
@@ -278,9 +282,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     type="text"
                     value={heroInput}
                     onChange={(e) => setHeroInput(e.target.value)}
-                    placeholder="Ask our AI a question to test live..."
+                    placeholder={t('hero.placeholder')}
                     className="flex-1 px-3 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
+
                   <button
                     type="submit"
                     disabled={isTyping}
@@ -555,20 +560,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="lg:col-span-6 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold border border-blue-500/30">
                 <DollarSign className="w-3.5 h-3.5" />
-                Interactive ROI Calculator
+                {t('calculator.badge')}
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                Calculate How Much OmniDesk Saves Your Team
+                {t('calculator.title')}
               </h2>
               <p className="text-sm text-slate-400 leading-relaxed">
-                By automating 88%+ of repetitive queries, your customer support agents can focus exclusively on complex inquiries and VIP relationships.
+                {t('calculator.subtitle')}
               </p>
 
               {/* Slider 1: Monthly Tickets */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
-                  <span className="text-slate-300">Monthly Customer Tickets</span>
-                  <span className="text-blue-400 font-mono text-sm">{monthlyTickets.toLocaleString()} Tickets / mo</span>
+                  <span className="text-slate-300">{t('calculator.ticketsLabel')}</span>
+                  <span className="text-blue-400 font-mono text-sm">{monthlyTickets.toLocaleString()}</span>
                 </div>
                 <input
                   type="range"
@@ -584,8 +589,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Slider 2: Cost Per Ticket */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
-                  <span className="text-slate-300">Estimated Support Cost Per Ticket</span>
-                  <span className="text-blue-400 font-mono text-sm">${costPerTicket} / ticket</span>
+                  <span className="text-slate-300">{t('calculator.costLabel')}</span>
+                  <span className="text-blue-400 font-mono text-sm">${costPerTicket}</span>
                 </div>
                 <input
                   type="range"
@@ -601,7 +606,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <div className="lg:col-span-6 bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-3xl border border-blue-500/30 shadow-2xl space-y-6">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block">
-                Estimated Annual Impact
+                {t('calculator.annualSavings')}
               </span>
 
               <div className="space-y-2">
@@ -616,13 +621,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="pt-6 border-t border-slate-700 grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-2xl font-black text-white">{savings.hoursSaved}</span>
-                  <span className="text-[11px] text-slate-400 block font-medium">Agent Hours Saved / Year</span>
+                  <span className="text-[11px] text-slate-400 block font-medium">{t('calculator.hoursSaved')}</span>
                 </div>
                 <div>
                   <span className="text-2xl font-black text-blue-400">88.5%</span>
-                  <span className="text-[11px] text-slate-400 block font-medium">Ticket Deflection Rate</span>
+                  <span className="text-[11px] text-slate-400 block font-medium">{t('calculator.deflectionNote')}</span>
                 </div>
               </div>
+
 
               <button
                 onClick={() => onSelectTab('pricing')}

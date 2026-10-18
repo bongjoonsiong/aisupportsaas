@@ -1,0 +1,110 @@
+export interface LocaleSchema {
+  nav: {
+    home: string;
+    features: string;
+    pricing: string;
+    demo: string;
+    login: string;
+    dashboard: string;
+    startTrial: string;
+    tagline: string;
+  };
+  hero: {
+    badge: string;
+    title: string;
+    titleHighlight: string;
+    subtitle: string;
+    ctaPrimary: string;
+    ctaSecondary: string;
+    statsDeflection: string;
+    statsDeflectionDesc: string;
+    statsSpeed: string;
+    statsSpeedDesc: string;
+    statsAvailability: string;
+    statsAvailabilityDesc: string;
+    greeting: string;
+    placeholder: string;
+    testBadge: string;
+    source: string;
+  };
+  features: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    ragTitle: string;
+    ragDesc: string;
+    liveHandoffTitle: string;
+    liveHandoffDesc: string;
+    customWidgetTitle: string;
+    customWidgetDesc: string;
+    leadCaptureTitle: string;
+    leadCaptureDesc: string;
+  };
+  calculator: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    ticketsLabel: string;
+    costLabel: string;
+    annualSavings: string;
+    hoursSaved: string;
+    deflectionNote: string;
+  };
+  pricing: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    monthly: string;
+    annual: string;
+    saveDiscount: string;
+    starterName: string;
+    starterDesc: string;
+    proName: string;
+    proDesc: string;
+    enterpriseName: string;
+    enterpriseDesc: string;
+    perMonth: string;
+    perYear: string;
+    popularBadge: string;
+    selectPlan: string;
+    contactSales: string;
+    freeTrialPledge: string;
+  };
+  sidebar: {
+    workspace: string;
+    inbox: string;
+    bots: string;
+    training: string;
+    customizer: string;
+    embed: string;
+    leads: string;
+    settings: string;
+    simulator: string;
+    pricing: string;
+    backToSite: string;
+    urgentBadge: string;
+    newBadge: string;
+  };
+  header: {
+    workspace: string;
+    activeBot: string;
+    onlineStatus: string;
+    awayStatus: string;
+    testSimulator: string;
+    createBot: string;
+    signIn: string;
+    signOut: string;
+    upgradePlan: string;
+    notifications: string;
+  };
+  common: {
+    language: string;
+    selectLanguage: string;
+    save: string;
+    cancel: string;
+    confirm: string;
+    loading: string;
+    close: string;
+    poweredBy: string;
+  };
+}

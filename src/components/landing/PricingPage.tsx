@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Check, 
   Sparkles, 
@@ -29,7 +30,9 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   onGoToDashboard
 }) => {
   const { user, currentOrg } = useAuth();
+  const { t } = useLanguage();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const plans = [
@@ -177,14 +180,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       <section className="pt-16 pb-12 md:pt-20 md:pb-16 text-center max-w-4xl mx-auto px-4 sm:px-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold mb-4 shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-          Transparent Pricing for Every Stage
+          {t('pricing.badge')}
         </div>
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-          Invest in Autonomous AI Support.<br className="hidden sm:inline" />
-          <span className="text-blue-600">Save 80%+ on Support Costs.</span>
+          {t('pricing.title')}
         </h1>
         <p className="mt-4 text-sm md:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Start with a 14-day free trial. Choose a flexible monthly plan or save 20% with annual billing. No setup fees or hidden surprises.
+          {t('pricing.subtitle')}
         </p>
 
         {/* Monthly vs Annual Toggle */}
@@ -198,7 +200,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Monthly Billing
+              {t('pricing.monthly')}
             </button>
             <button
               onClick={() => setBillingCycle('annual')}
@@ -208,14 +210,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Annual Billing</span>
+              <span>{t('pricing.annual')}</span>
               <span className="text-[10px] bg-emerald-400 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Save 20%
+                {t('pricing.saveDiscount')}
               </span>
             </button>
           </div>
         </div>
       </section>
+
 
       {/* Pricing Cards Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
