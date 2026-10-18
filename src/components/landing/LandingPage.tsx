@@ -111,30 +111,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen text-slate-800">
+    <div className="bg-[#F8FAFC] dark:bg-slate-950 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-200">
       {/* 1. HERO SECTION */}
-      <section className="relative pt-12 pb-20 md:pt-16 md:pb-28 overflow-hidden border-b border-slate-200/80">
+      <section className="relative pt-12 pb-20 md:pt-16 md:pb-28 overflow-hidden border-b border-slate-200/80 dark:border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             {/* Left Column: Value Proposition & CTAs */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-bold shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>{t('hero.badge')}</span>
               </div>
 
               {/* Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.1]">
                 {t('hero.title')}{' '}
-                <span className="text-blue-600">{t('hero.titleHighlight')}</span>
+                <span className="text-blue-600 dark:text-blue-400">{t('hero.titleHighlight')}</span>
               </h1>
 
               {/* Sub-headline */}
-              <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+              <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
                 {t('hero.subtitle')}
               </p>
+
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">

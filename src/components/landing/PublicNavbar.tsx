@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { LanguageSelector } from '../common/LanguageSelector';
+import { ThemeToggle } from '../common/ThemeToggle';
 import { 
   Zap, 
   Sparkles, 
@@ -14,7 +15,6 @@ import {
   Menu,
   X
 } from 'lucide-react';
-
 
 interface PublicNavbarProps {
   currentTab: 'home' | 'pricing' | 'features' | 'demo';
@@ -36,7 +36,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Brand Logo */}
         <div 
@@ -50,21 +50,21 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <Zap className="w-5 h-5 fill-current" />
           </div>
           <div>
-            <span className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-              OmniDesk <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">AI</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+              OmniDesk <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">AI</span>
             </span>
-            <p className="text-[10px] text-slate-400 font-medium leading-none">{t('nav.tagline')}</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-none">{t('nav.tagline')}</p>
           </div>
         </div>
 
         {/* Center Navigation Links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80">
+        <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
           <button
             onClick={() => onSelectTab('home')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               currentTab === 'home'
-                ? 'bg-white text-blue-600 shadow-xs font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-black'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
             }`}
           >
             {t('nav.home')}
@@ -74,8 +74,8 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             onClick={() => onSelectTab('features')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               currentTab === 'features'
-                ? 'bg-white text-blue-600 shadow-xs font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-black'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
             }`}
           >
             {t('nav.features')}
@@ -85,8 +85,8 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             onClick={() => onSelectTab('pricing')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               currentTab === 'pricing'
-                ? 'bg-white text-blue-600 shadow-xs font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-black'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
             }`}
           >
             {t('nav.pricing')}
@@ -94,15 +94,18 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
           <button
             onClick={onOpenLiveSimulator}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-blue-600 hover:bg-white/80 transition-all flex items-center gap-1"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/80 dark:hover:bg-slate-700/50 transition-all flex items-center gap-1"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>{t('nav.demo')}</span>
           </button>
         </nav>
 
-        {/* Right CTA / Auth Controls */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Right CTA / Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Theme Toggle Button */}
+          <ThemeToggle variant="light" />
+
           {/* Language Selector Dropdown */}
           <LanguageSelector variant="light" />
 
@@ -123,7 +126,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <>
               <button
                 onClick={onOpenAuthModal}
-                className="hidden sm:inline-flex px-3 py-2 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+                className="hidden sm:inline-flex px-3 py-2 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
               >
                 {t('nav.login')}
               </button>
@@ -141,7 +144,8 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           {/* Mobile Hamburger Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+
 
             aria-label="Toggle Navigation Menu"
           >

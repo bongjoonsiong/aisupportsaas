@@ -91,7 +91,7 @@ function MainAppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col transition-colors duration-200">
       {pageMode === 'public' ? (
         /* PUBLIC MARKETING FRONT-END (Landing Page & Inner Pricing Page) */
         <div className="flex-1 flex flex-col">
@@ -174,7 +174,7 @@ function MainAppContent() {
         </div>
       ) : (
         /* TENANT WORKSPACE DASHBOARD */
-        <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden">
+        <div className="flex h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-200">
           {/* Navigation Sidebar */}
           <Sidebar
             currentTab={dashboardView}
@@ -188,7 +188,7 @@ function MainAppContent() {
           />
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8FAFC] dark:bg-slate-950">
             {/* Top Global Header */}
             <Header
               onOpenWidgetSimulator={() => setShowSimulator(true)}
@@ -199,7 +199,8 @@ function MainAppContent() {
             />
 
             {/* Tenant View Switcher */}
-            <main className="flex-1 flex overflow-hidden bg-[#F8FAFC]">
+            <main className="flex-1 flex overflow-hidden bg-[#F8FAFC] dark:bg-slate-950">
+
               {dashboardView === 'inbox' && <LiveInbox />}
               
               {dashboardView === 'bots' && (

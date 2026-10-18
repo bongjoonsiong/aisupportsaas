@@ -38,10 +38,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       return 'bg-slate-800/90 text-slate-200 border-slate-700 hover:bg-slate-700/80 hover:text-white';
     }
     if (variant === 'ghost') {
-      return 'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-transparent';
+      return 'bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-transparent';
     }
-    // light (default)
-    return 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-xs';
+    // light (adaptive)
+    return 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white shadow-xs';
   };
 
   return (
@@ -64,8 +64,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl border border-slate-200/90 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-          <div className="px-3 py-1.5 border-b border-slate-100 flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200/90 dark:border-slate-800 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             <Globe className="w-3.5 h-3.5" />
             <span>Select Language</span>
           </div>
@@ -83,8 +83,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   }}
                   className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors ${
                     isSelected
-                      ? 'bg-blue-50 text-blue-700 font-bold'
-                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                      ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white font-medium'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -92,13 +92,13 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     <div className="flex flex-col">
                       <span className="leading-tight">{item.nativeName}</span>
                       {item.nativeName !== item.name && (
-                        <span className="text-[10px] text-slate-400 font-normal leading-none mt-0.5">
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal leading-none mt-0.5">
                           {item.name}
                         </span>
                       )}
                     </div>
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />}
                 </button>
               );
             })}
@@ -107,4 +107,5 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       )}
     </div>
   );
+
 };
