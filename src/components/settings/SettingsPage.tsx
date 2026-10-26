@@ -25,7 +25,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenSubscribeModal 
 }) => {
   const { currentOrg, updateOrg, user } = useAuth();
-  const { chatbots } = useBot();
+  const { chatbots, activeBot } = useBot();
   const [orgName, setOrgName] = useState(currentOrg.name);
   const [orgSlug, setOrgSlug] = useState(currentOrg.slug);
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -217,23 +217,38 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       </div>
 
       {/* 3. AI Engine & Security */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-          <Zap className="w-5 h-5 text-blue-600" />
-          <h3 className="font-bold text-slate-900 text-base">Gemini AI Model &amp; Architecture</h3>
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <Zap className="w-5 h-5 text-blue-600" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">AI Engine &amp; BYOK Architecture</h3>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+            {activeBot?.aiConfig.byokEnabled ? 'BYOK Mode Active' : 'Managed Cloud'}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-slate-800 block">Server-Side Gemini 2.5 Flash</span>
-            <p className="text-slate-500 leading-relaxed">
-              API keys are strictly isolated on the Express backend (<code className="font-mono text-blue-600">/api/chat</code>) to prevent browser exposure.
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Active Foundation Model</span>
+            <p className="text-blue-600 dark:text-blue-400 font-mono text-xs font-bold">
+              {activeBot?.aiConfig.customModelName || activeBot?.aiConfig.model || 'gemini-3.8-flash'}
+            </p>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase block font-semibold">
+              Provider: {activeBot?.aiConfig.provider || 'google'}
+            </span>
+          </div>
+
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Server-Side Key Isolation</span>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+              API credentials are encrypted with AES-256 and isolated on backend worker processes (<code className="font-mono text-blue-600">/api/chat</code>).
             </p>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
-            <span className="font-bold text-slate-800 block">Real-time RAG Knowledge Engine</span>
-            <p className="text-slate-500 leading-relaxed">
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Real-time RAG Knowledge</span>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
               Hybrid keyword and vector semantic retrieval provides grounded, hallucination-free answers.
             </p>
           </div>

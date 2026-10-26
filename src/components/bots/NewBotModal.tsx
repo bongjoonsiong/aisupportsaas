@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBot } from '../../context/BotContext';
-import { Bot, Sparkles, Headphones, ShoppingBag, Zap, Check } from 'lucide-react';
+import { AVAILABLE_MODELS } from '../../types';
+import { Bot, Sparkles, Headphones, ShoppingBag, Zap, Check, Cpu } from 'lucide-react';
 
 interface NewBotModalProps {
   onClose: () => void;
@@ -13,6 +14,7 @@ export const NewBotModal: React.FC<NewBotModalProps> = ({ onClose, onCreated }) 
   const [category, setCategory] = useState<'support' | 'sales' | 'onboarding'>('support');
   const [description, setDescription] = useState('');
   const [primaryColor, setPrimaryColor] = useState('#2563eb');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.8-flash');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const templates = [
@@ -58,6 +60,34 @@ export const NewBotModal: React.FC<NewBotModalProps> = ({ onClose, onCreated }) 
         name: botName.trim(),
         category,
         description: description || 'AI Assistant for customer inquiries.',
+        aiConfig: {
+          model: selectedModel,
+          provider: AVAILABLE_MODELS.find(m => m.id === selectedModel)?.provider || 'google',
+          byokEnabled: false,
+          systemPrompt: `You are the helpful AI Assistant for ${botName.trim()}. Answer accurately using company docs.`,
+          tone: 'friendly',
+          creativity: 0.3,
+          suggestedQuestions: [
+            'What features do you offer?',
+            'How does pricing work?',
+            'Can I speak with an agent?'
+          ],
+          fallbackMessage: "I'm not sure about that detail, but our support team is happy to help!",
+          humanHandoffEnabled: true,
+          humanHandoffTriggerKeywords: ['agent', 'human', 'representative', 'operator'],
+          autoSummaryEnabled: true,
+          sentimentAnalysisEnabled: true,
+          leadCapture: {
+            enabled: true,
+            trigger: 'on_intent',
+            title: 'Leave your contact info',
+            description: 'Let us know how to reach you if you get disconnected.',
+            requireName: true,
+            requireEmail: true,
+            requirePhone: false,
+            requireCompany: false,
+          }
+        },
         theme: {
           primaryColor,
           accentColor: primaryColor,
@@ -165,6 +195,50 @@ export const NewBotModal: React.FC<NewBotModalProps> = ({ onClose, onCreated }) 
               onChange={e => setDescription(e.target.value)}
               className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-blue-600" />
+                3. AI Foundation Model
+              </span>
+              <span className="text-[10px] text-slate-400 font-normal">Can configure BYOK anytime</span>
+            </label>
+            <select
+              value={selectedModel}
+              onChange={e => setSelectedModel(e.target.value)}
+              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium"
+            >
+              <optgroup label="🔷 Google Gemini">
+                {AVAILABLE_MODELS.filter(m => m.provider === 'google').map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.badge}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🟢 OpenAI ChatGPT">
+                {AVAILABLE_MODELS.filter(m => m.provider === 'openai').map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.badge}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🟣 Anthropic Claude">
+                {AVAILABLE_MODELS.filter(m => m.provider === 'anthropic').map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.badge}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="⚙️ Custom / Enterprise">
+                {AVAILABLE_MODELS.filter(m => m.provider === 'custom').map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">

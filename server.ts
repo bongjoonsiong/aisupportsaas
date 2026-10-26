@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { generateChatResponse, generateAutoFaqs } from './server/geminiService';
+import { generateChatResponse, generateAutoFaqs, testModelConnection } from './server/geminiService';
 import { generateWidgetJs } from './server/widgetGenerator';
 
 dotenv.config();
@@ -37,10 +37,25 @@ async function startServer() {
     res.send(script);
   });
 
-  // Chat completion endpoint proxying to Gemini AI + RAG engine
+  // Chat completion endpoint proxying to AI models + RAG engine
   app.post('/api/chat', async (req, res) => {
     try {
-      const { botId, botName, systemPrompt, tone, messages, visitorInfo, knowledgeSources, humanHandoffKeywords } = req.body;
+      const {
+        botId,
+        botName,
+        provider,
+        model,
+        customModelName,
+        byokEnabled,
+        byokApiKey,
+        customEndpoint,
+        systemPrompt,
+        tone,
+        messages,
+        visitorInfo,
+        knowledgeSources,
+        humanHandoffKeywords
+      } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Messages array is required' });
@@ -49,6 +64,12 @@ async function startServer() {
       const result = await generateChatResponse({
         botId: botId || 'bot_support_pro',
         botName: botName || 'AI Customer Support',
+        provider: provider || 'google',
+        model: customModelName || model || 'gemini-3.8-flash',
+        customModelName,
+        byokEnabled: Boolean(byokEnabled),
+        byokApiKey,
+        customEndpoint,
         systemPrompt,
         tone,
         messages,
@@ -65,6 +86,23 @@ async function startServer() {
         details: error.message,
         reply: "I'm temporarily experiencing high traffic, but I've recorded your question and an agent will follow up shortly!"
       });
+    }
+  });
+
+  // Live key testing endpoint for tenant BYOK validation
+  app.post('/api/test-key', async (req, res) => {
+    try {
+      const { provider, model, apiKey, customEndpoint } = req.body;
+      const result = await testModelConnection({
+        provider: provider || 'google',
+        model: model || 'gemini-2.5-flash',
+        apiKey: apiKey || '',
+        customEndpoint
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error in /api/test-key handler:', error);
+      res.status(500).json({ success: false, message: error.message || 'Key test failed' });
     }
   });
 

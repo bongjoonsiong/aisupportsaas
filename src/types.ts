@@ -78,8 +78,157 @@ export interface LeadCaptureConfig {
   requireCompany: boolean;
 }
 
+export type LLMProvider = 'google' | 'openai' | 'anthropic' | 'custom';
+export type ModelTier = 'standard' | 'high_speed' | 'pro' | 'frontier';
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  provider: LLMProvider;
+  tier: ModelTier;
+  description: string;
+  badge: string;
+  contextWindow: string;
+  speed: 'Instant' | 'Fast' | 'Balanced' | 'Deep Think';
+}
+
+export const AVAILABLE_MODELS: ModelOption[] = [
+  // Google Gemini
+  {
+    id: 'gemini-3.8-flash',
+    name: 'Gemini 3.8 Flash',
+    provider: 'google',
+    tier: 'standard',
+    badge: 'Recommended · Ultra Fast',
+    description: 'Sub-second latency with multimodal reasoning. Optimal default for real-time customer support widgets.',
+    contextWindow: '1M tokens',
+    speed: 'Instant'
+  },
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'google',
+    tier: 'high_speed',
+    badge: 'High Throughput',
+    description: 'Ultra cost-effective model tuned for high concurrency and immediate response generation.',
+    contextWindow: '1M tokens',
+    speed: 'Instant'
+  },
+  {
+    id: 'gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
+    provider: 'google',
+    tier: 'pro',
+    badge: 'Deep Reasoning',
+    description: 'Advanced logical reasoning across extensive enterprise documentation, contracts, and manuals.',
+    contextWindow: '2M tokens',
+    speed: 'Balanced'
+  },
+  {
+    id: 'gemini-4-arton',
+    name: 'Gemini 4 Arton',
+    provider: 'google',
+    tier: 'frontier',
+    badge: 'Frontier Flagship ⭐',
+    description: 'Next-generation frontier AI with agentic self-reflection, multimodal synthesis, and near-zero hallucination rate.',
+    contextWindow: '4M tokens',
+    speed: 'Deep Think'
+  },
+
+  // OpenAI / ChatGPT
+  {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o mini',
+    provider: 'openai',
+    tier: 'high_speed',
+    badge: 'Fast & Budget-Friendly',
+    description: 'Lightweight conversational intelligence engineered for high-frequency customer chats and quick FAQ answers.',
+    contextWindow: '128K tokens',
+    speed: 'Fast'
+  },
+  {
+    id: 'gpt-4o',
+    name: 'GPT-4o Flagship',
+    provider: 'openai',
+    tier: 'pro',
+    badge: 'Omnimodal Intelligence',
+    description: 'Versatile, high-precision natural language model for nuanced multi-turn customer engagements and sales.',
+    contextWindow: '128K tokens',
+    speed: 'Balanced'
+  },
+  {
+    id: 'chatgpt-6-astra-sol',
+    name: 'ChatGPT 6 Astra Sol',
+    provider: 'openai',
+    tier: 'frontier',
+    badge: 'Next-Gen Frontier ⭐',
+    description: 'Next-generation cognitive architecture with predictive customer empathy, emotional EQ, and deep intent recognition.',
+    contextWindow: '512K tokens',
+    speed: 'Deep Think'
+  },
+
+  // Anthropic Claude
+  {
+    id: 'claude-3-5-haiku',
+    name: 'Claude 3.5 Haiku',
+    provider: 'anthropic',
+    tier: 'high_speed',
+    badge: 'Lightning Speed',
+    description: 'Near-instantaneous responsiveness suited for rapid FAQ lookup and live agent co-pilot suggestions.',
+    contextWindow: '200K tokens',
+    speed: 'Instant'
+  },
+  {
+    id: 'claude-3-5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'anthropic',
+    tier: 'pro',
+    badge: 'Gold Standard Reasoning',
+    description: 'Industry-leading benchmark for complex instructions, safety compliance, and nuanced brand voice adherence.',
+    contextWindow: '200K tokens',
+    speed: 'Fast'
+  },
+  {
+    id: 'claude-sonnet-5-5',
+    name: 'Claude Sonnet 5.5',
+    provider: 'anthropic',
+    tier: 'frontier',
+    badge: 'Enterprise Frontier ⭐',
+    description: 'Next-gen enterprise workhorse with ultra-strict compliance, legal audit trails, and zero-deviation policy adherence.',
+    contextWindow: '1M tokens',
+    speed: 'Balanced'
+  },
+  {
+    id: 'claude-opus-5-5',
+    name: 'Claude Opus 5.5',
+    provider: 'anthropic',
+    tier: 'frontier',
+    badge: 'Ultimate Frontier Intelligence ⭐',
+    description: 'Unrivaled cognitive depth, long-horizon multi-step problem solving, and complex dispute resolution for high-value enterprise accounts.',
+    contextWindow: '2M tokens',
+    speed: 'Deep Think'
+  },
+
+  // Custom / Fine-Tuned
+  {
+    id: 'custom-model',
+    name: 'Custom / Fine-Tuned Enterprise Model',
+    provider: 'custom',
+    tier: 'pro',
+    badge: 'Enterprise BYOK',
+    description: 'Connect your private fine-tuned checkpoint, Azure OpenAI deployment, DeepSeek-R1, or self-hosted endpoint.',
+    contextWindow: 'Custom',
+    speed: 'Balanced'
+  }
+];
+
 export interface AIConfig {
+  provider?: LLMProvider;
   model: string;
+  customModelName?: string;
+  byokEnabled?: boolean;
+  byokApiKey?: string;
+  customEndpoint?: string;
   systemPrompt: string;
   tone: 'professional' | 'friendly' | 'empathic' | 'concise' | 'technical';
   creativity: number; // 0 to 1

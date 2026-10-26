@@ -20,10 +20,11 @@ function getGenAI(): GoogleGenAI | null {
 const PRIMARY_MODEL = 'gemini-3.8-flash';
 const FALLBACK_MODEL = 'gemini-3.6-flash';
 
-async function callGenerateContent(genAI: GoogleGenAI, prompt: string, temperature = 0.3) {
+async function callGenerateContent(genAI: GoogleGenAI, prompt: string, modelToUse = PRIMARY_MODEL, temperature = 0.3) {
+  const targetModel = (modelToUse && modelToUse.startsWith('gemini')) ? modelToUse : PRIMARY_MODEL;
   try {
     return await genAI.models.generateContent({
-      model: PRIMARY_MODEL,
+      model: targetModel,
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -31,7 +32,7 @@ async function callGenerateContent(genAI: GoogleGenAI, prompt: string, temperatu
       },
     });
   } catch (primaryErr: any) {
-    console.warn(`Primary model ${PRIMARY_MODEL} failed, trying fallback ${FALLBACK_MODEL}:`, primaryErr?.message);
+    console.warn(`Target model ${targetModel} failed, trying fallback ${FALLBACK_MODEL}:`, primaryErr?.message);
     return await genAI.models.generateContent({
       model: FALLBACK_MODEL,
       contents: prompt,
@@ -46,6 +47,12 @@ async function callGenerateContent(genAI: GoogleGenAI, prompt: string, temperatu
 export interface ChatRequestPayload {
   botId: string;
   botName: string;
+  provider?: string;
+  model?: string;
+  customModelName?: string;
+  byokEnabled?: boolean;
+  byokApiKey?: string;
+  customEndpoint?: string;
   systemPrompt?: string;
   tone?: string;
   messages: { sender: 'visitor' | 'bot' | 'agent' | 'system'; text: string }[];
@@ -76,13 +83,158 @@ export interface ChatResponseResult {
     company?: string;
   };
   suggestedFollowUps?: string[];
+  modelUsed?: string;
+}
+
+export interface TestConnectionPayload {
+  provider: string;
+  model: string;
+  apiKey: string;
+  customEndpoint?: string;
+}
+
+export interface TestConnectionResult {
+  success: boolean;
+  message: string;
+  latencyMs?: number;
+  modelUsed?: string;
 }
 
 /**
- * Executes a customer support chat turn using Gemini AI with RAG context
+ * Tests live connection for a provider API key
+ */
+export async function testModelConnection(payload: TestConnectionPayload): Promise<TestConnectionResult> {
+  const { provider, model, apiKey, customEndpoint } = payload;
+  const start = Date.now();
+
+  if (!apiKey && provider !== 'custom') {
+    return { success: false, message: 'API key is required to test the connection.' };
+  }
+
+  try {
+    if (provider === 'google') {
+      const testClient = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+      const targetModel = model.startsWith('gemini') ? model : 'gemini-2.5-flash';
+      await testClient.models.generateContent({
+        model: targetModel,
+        contents: 'Respond with OK',
+        config: { maxOutputTokens: 10 }
+      });
+      const latency = Date.now() - start;
+      return {
+        success: true,
+        message: `Successfully connected to Google Gemini! Model ${targetModel} responded in ${latency}ms.`,
+        latencyMs: latency,
+        modelUsed: targetModel
+      };
+    } else if (provider === 'openai') {
+      const endpoint = customEndpoint ? `${customEndpoint.replace(/\/$/, '')}/chat/completions` : 'https://api.openai.com/v1/chat/completions';
+      // For future or mock preview frontier models (like Astra Sol), fallback to gpt-4o-mini for connection ping
+      const pingModel = (model.startsWith('gpt-') && !model.includes('astra')) ? model : 'gpt-4o-mini';
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: pingModel,
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 5
+        })
+      });
+      const latency = Date.now() - start;
+      if (resp.ok) {
+        return {
+          success: true,
+          message: `Successfully connected to OpenAI API! Model ${model} validated in ${latency}ms.`,
+          latencyMs: latency,
+          modelUsed: model
+        };
+      } else {
+        const errJson: any = await resp.json().catch(() => ({}));
+        return {
+          success: false,
+          message: errJson?.error?.message || `OpenAI connection failed with status ${resp.status} (${resp.statusText})`
+        };
+      }
+    } else if (provider === 'anthropic') {
+      const endpoint = customEndpoint ? `${customEndpoint.replace(/\/$/, '')}/messages` : 'https://api.anthropic.com/v1/messages';
+      const pingModel = (model.startsWith('claude-3-') && !model.includes('5.5')) ? model : 'claude-3-5-haiku-20241022';
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: pingModel,
+          max_tokens: 5,
+          messages: [{ role: 'user', content: 'ping' }]
+        })
+      });
+      const latency = Date.now() - start;
+      if (resp.ok) {
+        return {
+          success: true,
+          message: `Successfully connected to Anthropic Claude! Model ${model} validated in ${latency}ms.`,
+          latencyMs: latency,
+          modelUsed: model
+        };
+      } else {
+        const errJson: any = await resp.json().catch(() => ({}));
+        return {
+          success: false,
+          message: errJson?.error?.message || `Anthropic connection failed with status ${resp.status} (${resp.statusText})`
+        };
+      }
+    } else {
+      if (!customEndpoint) {
+        return { success: false, message: 'Custom endpoint URL is required.' };
+      }
+      const resp = await fetch(customEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {})
+        },
+        body: JSON.stringify({
+          model: model || 'default',
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 5
+        })
+      });
+      const latency = Date.now() - start;
+      if (resp.ok) {
+        return {
+          success: true,
+          message: `Successfully connected to custom endpoint in ${latency}ms!`,
+          latencyMs: latency,
+          modelUsed: model
+        };
+      } else {
+        return {
+          success: false,
+          message: `Custom endpoint returned status ${resp.status}: ${resp.statusText}`
+        };
+      }
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      message: `Connection error: ${err.message || 'Unknown network or authorization failure'}`
+    };
+  }
+}
+
+/**
+ * Executes a customer support chat turn using AI with RAG context and multi-provider BYOK
  */
 export async function generateChatResponse(payload: ChatRequestPayload): Promise<ChatResponseResult> {
-  const genAI = getGenAI();
   const lastUserMsg = [...payload.messages].reverse().find(m => m.sender === 'visitor')?.text || '';
 
   // Check for human handoff keywords directly
@@ -101,10 +253,7 @@ export async function generateChatResponse(payload: ChatRequestPayload): Promise
     knowledgeContext = `\n--- COMPANY KNOWLEDGE BASE ---\n${relevantChunks.join('\n\n')}\n--- END KNOWLEDGE BASE ---\n`;
   }
 
-  // If Gemini API Key is available, use Gemini 2.5 Flash
-  if (genAI) {
-    try {
-      const prompt = `
+  const systemInstructions = `
 You are the AI Customer Support Assistant for "${payload.botName}".
 Tone/Persona: ${payload.tone || 'friendly, professional, and helpful'}.
 ${payload.systemPrompt ? `Additional Custom Instructions: ${payload.systemPrompt}` : ''}
@@ -139,7 +288,104 @@ INSTRUCTIONS:
 }
 `;
 
-      const response = await callGenerateContent(genAI, prompt, 0.3);
+  // 1. If BYOK with OpenAI is enabled
+  if (payload.byokEnabled && payload.byokApiKey && payload.provider === 'openai') {
+    try {
+      const endpoint = payload.customEndpoint ? `${payload.customEndpoint.replace(/\/$/, '')}/chat/completions` : 'https://api.openai.com/v1/chat/completions';
+      const selectedModel = (payload.model?.startsWith('gpt-') && !payload.model.includes('astra')) ? payload.model : 'gpt-4o-mini';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${payload.byokApiKey}`
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            { role: 'system', content: systemInstructions },
+            { role: 'user', content: lastUserMsg }
+          ],
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      if (res.ok) {
+        const data: any = await res.json();
+        const content = data.choices?.[0]?.message?.content || '{}';
+        const parsed = JSON.parse(content);
+        return {
+          reply: parsed.reply || "I'm here to help! How can I assist you with our services?",
+          sourcesUsed: sourcesUsed.slice(0, 3),
+          handoverRequested: Boolean(parsed.handoverRequested || wantsHandoff),
+          sentiment: parsed.sentiment || (wantsHandoff ? 'urgent' : 'neutral'),
+          capturedLead: parsed.capturedLead || undefined,
+          suggestedFollowUps: parsed.suggestedFollowUps || [],
+          modelUsed: payload.model || selectedModel
+        };
+      }
+    } catch (e: any) {
+      console.warn('OpenAI BYOK call failed, falling back to managed engine:', e.message);
+    }
+  }
+
+  // 2. If BYOK with Anthropic is enabled
+  if (payload.byokEnabled && payload.byokApiKey && payload.provider === 'anthropic') {
+    try {
+      const endpoint = payload.customEndpoint ? `${payload.customEndpoint.replace(/\/$/, '')}/messages` : 'https://api.anthropic.com/v1/messages';
+      const selectedModel = (payload.model?.startsWith('claude-3-') && !payload.model.includes('5.5')) ? payload.model : 'claude-3-5-haiku-20241022';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'x-api-key': payload.byokApiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          max_tokens: 1024,
+          system: systemInstructions,
+          messages: [{ role: 'user', content: lastUserMsg }]
+        })
+      });
+
+      if (res.ok) {
+        const data: any = await res.json();
+        const content = data.content?.[0]?.text || '{}';
+        try {
+          const parsed = JSON.parse(content);
+          return {
+            reply: parsed.reply || content,
+            sourcesUsed: sourcesUsed.slice(0, 3),
+            handoverRequested: Boolean(parsed.handoverRequested || wantsHandoff),
+            sentiment: parsed.sentiment || (wantsHandoff ? 'urgent' : 'neutral'),
+            capturedLead: parsed.capturedLead || undefined,
+            suggestedFollowUps: parsed.suggestedFollowUps || [],
+            modelUsed: payload.model || selectedModel
+          };
+        } catch (_) {
+          return {
+            reply: content,
+            sourcesUsed: sourcesUsed.slice(0, 3),
+            handoverRequested: wantsHandoff,
+            sentiment: wantsHandoff ? 'urgent' : 'neutral',
+            modelUsed: payload.model || selectedModel
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn('Anthropic BYOK call failed, falling back to managed engine:', e.message);
+    }
+  }
+
+  // 3. Google Gemini (BYOK or OmniDesk Managed Cloud)
+  const effectiveGenAI = (payload.byokEnabled && payload.byokApiKey && payload.provider === 'google')
+    ? new GoogleGenAI({ apiKey: payload.byokApiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } })
+    : getGenAI();
+
+  if (effectiveGenAI) {
+    try {
+      const requestedModel = payload.model || PRIMARY_MODEL;
+      const response = await callGenerateContent(effectiveGenAI, systemInstructions, requestedModel, 0.3);
 
       const responseText = response.text || '';
       try {
@@ -150,14 +396,16 @@ INSTRUCTIONS:
           handoverRequested: Boolean(parsed.handoverRequested || wantsHandoff),
           sentiment: parsed.sentiment || (wantsHandoff ? 'urgent' : 'neutral'),
           capturedLead: parsed.capturedLead || undefined,
-          suggestedFollowUps: parsed.suggestedFollowUps || []
+          suggestedFollowUps: parsed.suggestedFollowUps || [],
+          modelUsed: requestedModel
         };
       } catch (parseErr) {
         return {
           reply: responseText,
           sourcesUsed: sourcesUsed.slice(0, 3),
           handoverRequested: wantsHandoff,
-          sentiment: wantsHandoff ? 'urgent' : 'neutral'
+          sentiment: wantsHandoff ? 'urgent' : 'neutral',
+          modelUsed: requestedModel
         };
       }
     } catch (apiError: any) {
@@ -165,7 +413,7 @@ INSTRUCTIONS:
     }
   }
 
-  // Intelligent fallback RAG matching if Gemini API Key not present or error
+  // Intelligent fallback RAG matching if AI Key not present or error
   return fallbackRagResponse(lastUserMsg, payload, sourcesUsed, wantsHandoff);
 }
 
@@ -191,7 +439,7 @@ Return in JSON format:
   }
 ]
 `;
-      const response = await callGenerateContent(genAI, prompt, 0.2);
+      const response = await callGenerateContent(genAI, prompt, PRIMARY_MODEL, 0.2);
 
       const result = JSON.parse(response.text || '[]');
       if (Array.isArray(result) && result.length > 0) {

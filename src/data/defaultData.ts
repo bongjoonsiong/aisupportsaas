@@ -143,7 +143,9 @@ export const PUBLIC_STOREFRONT_BOT: Chatbot = {
     enableDarkMode: false,
   },
   aiConfig: {
+    provider: 'google',
     model: 'gemini-3.8-flash',
+    byokEnabled: false,
     systemPrompt: 'You are the knowledgeable, polite audio concierge for Aura Sound Storefront. You answer questions about Studio Pro Wireless ANC Headphones ($299, 40h ANC battery, 30-day trial, free 2-day express shipping, 2-year warranty). Be helpful, concise, and friendly.',
     tone: 'friendly',
     creativity: 0.3,
@@ -244,7 +246,9 @@ export const DEFAULT_CHATBOTS: Chatbot[] = [
       enableDarkMode: false,
     },
     aiConfig: {
+      provider: 'google',
       model: 'gemini-3.8-flash',
+      byokEnabled: false,
       systemPrompt: 'You are the intelligent, polite, and helpful AI Support Specialist for Acme Cloud. Answer user inquiries accurately based on the provided company knowledge base. If you do not know the answer or the user asks for a refund/human agent, politely collect their contact info and assure them an agent will follow up.',
       tone: 'friendly',
       creativity: 0.3,
@@ -305,7 +309,9 @@ export const DEFAULT_CHATBOTS: Chatbot[] = [
       enableDarkMode: false,
     },
     aiConfig: {
+      provider: 'google',
       model: 'gemini-3.8-flash',
+      byokEnabled: false,
       systemPrompt: 'You are an enthusiastic Enterprise Solutions Consultant for Acme Cloud. Your goal is to understand the visitor\'s company size, tech stack, and primary pain points, then guide them to schedule an enterprise demo or sign up for a Pro trial.',
       tone: 'professional',
       creativity: 0.4,

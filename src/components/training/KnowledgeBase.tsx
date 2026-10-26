@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBot } from '../../context/BotContext';
-import { KnowledgeItem, FAQItem } from '../../types';
+import { KnowledgeItem, FAQItem, AVAILABLE_MODELS, LLMProvider } from '../../types';
 import { 
   BrainCircuit, 
   Globe, 
@@ -15,7 +15,18 @@ import {
   Sliders, 
   ExternalLink,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Cpu,
+  Key,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Lock,
+  Server,
+  Zap,
+  Layers
 } from 'lucide-react';
 
 export const KnowledgeBase: React.FC = () => {
@@ -29,7 +40,7 @@ export const KnowledgeBase: React.FC = () => {
     crawlWebsiteUrl 
   } = useBot();
 
-  const [activeTab, setActiveTab] = useState<'faqs' | 'urls' | 'docs' | 'prompt'>('faqs');
+  const [activeTab, setActiveTab] = useState<'faqs' | 'urls' | 'docs' | 'prompt' | 'model'>('faqs');
   
   // FAQ state
   const [newQuestion, setNewQuestion] = useState('');
@@ -55,6 +66,38 @@ export const KnowledgeBase: React.FC = () => {
   const [fallbackMessage, setFallbackMessage] = useState(activeBot?.aiConfig.fallbackMessage || '');
   const [keywords, setKeywords] = useState(activeBot?.aiConfig.humanHandoffTriggerKeywords.join(', ') || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Model & BYOK State
+  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(activeBot?.aiConfig.provider || 'google');
+  const [selectedModel, setSelectedModel] = useState<string>(activeBot?.aiConfig.model || 'gemini-3.8-flash');
+  const [customModelName, setCustomModelName] = useState<string>(activeBot?.aiConfig.customModelName || '');
+  const [byokEnabled, setByokEnabled] = useState<boolean>(Boolean(activeBot?.aiConfig.byokEnabled));
+  const [byokApiKey, setByokApiKey] = useState<string>(activeBot?.aiConfig.byokApiKey || '');
+  const [customEndpoint, setCustomEndpoint] = useState<string>(activeBot?.aiConfig.customEndpoint || '');
+  const [showApiKey, setShowApiKey] = useState<boolean>(false);
+  const [testKeyStatus, setTestKeyStatus] = useState<{
+    loading: boolean;
+    result?: { success: boolean; message: string; latencyMs?: number; modelUsed?: string };
+  }>({ loading: false });
+  const [saveModelSuccess, setSaveModelSuccess] = useState(false);
+
+  // Sync state when activeBot switches
+  useEffect(() => {
+    if (activeBot) {
+      setSystemPrompt(activeBot.aiConfig.systemPrompt || '');
+      setTone(activeBot.aiConfig.tone || 'friendly');
+      setCreativity(activeBot.aiConfig.creativity ?? 0.3);
+      setFallbackMessage(activeBot.aiConfig.fallbackMessage || '');
+      setKeywords(activeBot.aiConfig.humanHandoffTriggerKeywords.join(', ') || '');
+      setSelectedProvider(activeBot.aiConfig.provider || 'google');
+      setSelectedModel(activeBot.aiConfig.model || 'gemini-3.8-flash');
+      setCustomModelName(activeBot.aiConfig.customModelName || '');
+      setByokEnabled(Boolean(activeBot.aiConfig.byokEnabled));
+      setByokApiKey(activeBot.aiConfig.byokApiKey || '');
+      setCustomEndpoint(activeBot.aiConfig.customEndpoint || '');
+      setTestKeyStatus({ loading: false });
+    }
+  }, [activeBot?.id]);
 
   if (!activeBot) {
     return (
@@ -200,49 +243,99 @@ export const KnowledgeBase: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
+  // Save Model & BYOK Config
+  const handleSaveModelConfig = async () => {
+    if (!activeBot) return;
+    await updateChatbot(activeBot.id, {
+      aiConfig: {
+        ...activeBot.aiConfig,
+        provider: selectedProvider,
+        model: customModelName.trim() || selectedModel,
+        customModelName: customModelName.trim() || undefined,
+        byokEnabled,
+        byokApiKey: byokApiKey.trim(),
+        customEndpoint: customEndpoint.trim() || undefined
+      }
+    });
+    setSaveModelSuccess(true);
+    setTimeout(() => setSaveModelSuccess(false), 2500);
+  };
+
+  // Test Live Connection for Provider API Key
+  const handleTestConnection = async () => {
+    if (byokEnabled && !byokApiKey.trim() && selectedProvider !== 'custom') {
+      setTestKeyStatus({
+        loading: false,
+        result: { success: false, message: 'Please enter your API key to test connection.' }
+      });
+      return;
+    }
+
+    setTestKeyStatus({ loading: true });
+    try {
+      const res = await fetch('/api/test-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: selectedProvider,
+          model: customModelName.trim() || selectedModel,
+          apiKey: byokApiKey.trim(),
+          customEndpoint: customEndpoint.trim() || undefined
+        })
+      });
+      const data = await res.json();
+      setTestKeyStatus({ loading: false, result: data });
+    } catch (err: any) {
+      setTestKeyStatus({
+        loading: false,
+        result: { success: false, message: err.message || 'Connection test request failed.' }
+      });
+    }
+  };
+
   return (
-    <div className="flex-1 p-6 md:p-8 bg-[#F8FAFC] overflow-y-auto">
+    <div className="flex-1 p-6 md:p-8 bg-[#F8FAFC] dark:bg-slate-950 overflow-y-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <BrainCircuit className="w-6 h-6 text-blue-600" />
-            Knowledge Base & AI Training
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <BrainCircuit className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            Knowledge Base &amp; AI Training
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Train <span className="font-bold text-slate-800">{activeBot.name}</span> on website links, product manuals, PDFs, and custom FAQ pairs.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Train <span className="font-bold text-slate-800 dark:text-slate-200">{activeBot.name}</span> on website links, product manuals, PDFs, and choose your foundation LLM model.
           </p>
         </div>
 
         {/* Source Counts Summary */}
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold flex items-center gap-1.5 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+          <span className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             {botKnowledge.length} Active Training Sources
           </span>
         </div>
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mb-6 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 mb-6 overflow-x-auto pb-1">
         <button
           onClick={() => setActiveTab('faqs')}
           className={`px-4 py-2.5 text-xs md:text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
             activeTab === 'faqs'
-              ? 'border-blue-600 text-blue-600 bg-white shadow-sm'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 shadow-sm'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <HelpCircle className="w-4 h-4" />
-          Q&A & FAQs ({currentFaqs.length})
+          Q&amp;A &amp; FAQs ({currentFaqs.length})
         </button>
 
         <button
           onClick={() => setActiveTab('urls')}
           className={`px-4 py-2.5 text-xs md:text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
             activeTab === 'urls'
-              ? 'border-blue-600 text-blue-600 bg-white shadow-sm'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 shadow-sm'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Globe className="w-4 h-4" />
@@ -253,24 +346,36 @@ export const KnowledgeBase: React.FC = () => {
           onClick={() => setActiveTab('docs')}
           className={`px-4 py-2.5 text-xs md:text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
             activeTab === 'docs'
-              ? 'border-blue-600 text-blue-600 bg-white shadow-sm'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 shadow-sm'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <FileText className="w-4 h-4" />
-          PDFs & Documents ({botKnowledge.filter(k => k.type === 'pdf' || k.type === 'text').length})
+          PDFs &amp; Documents ({botKnowledge.filter(k => k.type === 'pdf' || k.type === 'text').length})
         </button>
 
         <button
           onClick={() => setActiveTab('prompt')}
           className={`px-4 py-2.5 text-xs md:text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
             activeTab === 'prompt'
-              ? 'border-blue-600 text-blue-600 bg-white shadow-sm'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 shadow-sm'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Sliders className="w-4 h-4" />
-          AI Persona & Instructions
+          AI Persona &amp; Instructions
+        </button>
+
+        <button
+          onClick={() => setActiveTab('model')}
+          className={`px-4 py-2.5 text-xs md:text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 border-b-2 ${
+            activeTab === 'model'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 shadow-sm'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Cpu className="w-4 h-4" />
+          AI Engine &amp; BYOK
         </button>
       </div>
 
@@ -612,6 +717,349 @@ export const KnowledgeBase: React.FC = () => {
                 Saved successfully!
               </span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. AI MODEL & BYOK ENGINE TAB */}
+      {activeTab === 'model' && (
+        <div className="space-y-6 max-w-4xl">
+          {/* Overview Hero Box */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+            <div className="relative z-10 space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                <span>Multi-LLM Foundation &amp; BYOK Architecture</span>
+              </div>
+              <h3 className="text-xl font-black tracking-tight">AI Model Selection &amp; Bring Your Own Key</h3>
+              <p className="text-xs md:text-sm text-blue-100 max-w-2xl leading-relaxed">
+                Empower <span className="font-bold underline decoration-blue-300">{activeBot.name}</span> with next-generation reasoning. Choose from frontier models like Google Gemini 4 Arton, ChatGPT 6 Astra Sol, and Claude Opus 5.5, or plug in your enterprise API key to pay wholesale token prices with zero platform markups.
+              </p>
+            </div>
+          </div>
+
+          {/* BYOK Toggle Mode Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div 
+              onClick={() => setByokEnabled(false)}
+              className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                !byokEnabled 
+                  ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/30 shadow-sm' 
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    !byokEnabled ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}>
+                    <Server className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">OmniDesk Managed Cloud</h4>
+                    <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">Included in SaaS Subscription</span>
+                  </div>
+                </div>
+                <input 
+                  type="radio" 
+                  name="byok_mode"
+                  checked={!byokEnabled} 
+                  onChange={() => setByokEnabled(false)} 
+                  className="w-4 h-4 text-blue-600 accent-blue-600 mt-1 cursor-pointer" 
+                />
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
+                No developer account or API keys required. All conversational tokens and embeddings run automatically on OmniDesk's high-speed Google Cloud Run enterprise cluster.
+              </p>
+            </div>
+
+            <div 
+              onClick={() => setByokEnabled(true)}
+              className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                byokEnabled 
+                  ? 'border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-sm' 
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    byokEnabled ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}>
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Bring Your Own Key (BYOK)</h4>
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Wholesale Billing · Zero Markup</span>
+                  </div>
+                </div>
+                <input 
+                  type="radio" 
+                  name="byok_mode"
+                  checked={byokEnabled} 
+                  onChange={() => setByokEnabled(true)} 
+                  className="w-4 h-4 text-emerald-600 accent-emerald-600 mt-1 cursor-pointer" 
+                />
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
+                Connect your organization's Google AI Studio, OpenAI, or Anthropic account. Pay providers directly at wholesale rates with unlimited quota and custom compliance agreements.
+              </p>
+            </div>
+          </div>
+
+          {/* Provider Selector Tabs */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5">
+                1. Select AI Provider
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {[
+                  { id: 'google', name: 'Google Gemini', desc: 'Gemini 3.8 / 4 Arton' },
+                  { id: 'openai', name: 'OpenAI ChatGPT', desc: 'GPT-4o / Astra Sol' },
+                  { id: 'anthropic', name: 'Anthropic Claude', desc: 'Sonnet & Opus 5.5' },
+                  { id: 'custom', name: 'Custom / Private', desc: 'Azure / Self-Hosted' }
+                ].map(p => {
+                  const isSelected = selectedProvider === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedProvider(p.id as LLMProvider);
+                        const firstModel = AVAILABLE_MODELS.find(m => m.provider === p.id);
+                        if (firstModel) setSelectedModel(firstModel.id);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                        isSelected 
+                          ? 'border-blue-600 dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/20' 
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <span className="font-bold text-xs md:text-sm block">{p.name}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">{p.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Model Selection Grid */}
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  2. Choose Intelligence Model Tier
+                </label>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  {AVAILABLE_MODELS.filter(m => m.provider === selectedProvider).length} Models Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {AVAILABLE_MODELS.filter(m => m.provider === selectedProvider).map(model => {
+                  const isSelected = selectedModel === model.id;
+                  const isFrontier = model.tier === 'frontier';
+
+                  return (
+                    <div
+                      key={model.id}
+                      onClick={() => setSelectedModel(model.id)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between relative ${
+                        isSelected
+                          ? 'border-blue-600 dark:border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/30 dark:bg-blue-950/30 shadow-sm'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <h5 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            {model.name}
+                          </h5>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                            isFrontier
+                              ? 'bg-gradient-to-r from-amber-500/20 to-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800'
+                              : model.tier === 'pro'
+                              ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                              : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                          }`}>
+                            {model.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                          {model.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-400 dark:text-slate-500">Context: <strong className="text-slate-700 dark:text-slate-300">{model.contextWindow}</strong></span>
+                        <span className="text-slate-400 dark:text-slate-500">Speed: <strong className="text-slate-700 dark:text-slate-300">{model.speed}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Custom Model Input if Custom Selected */}
+              {(selectedModel === 'custom-model' || selectedProvider === 'custom') && (
+                <div className="mt-3 p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Custom Model String / Deployment Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ft:gpt-4o:org-enterprise-2026, deepseek-ai/DeepSeek-R1, or claude-custom-deployment"
+                    value={customModelName}
+                    onChange={e => setCustomModelName(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Enter the exact model identifier from your fine-tuned model checkpoint or custom Azure deployment.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* BYOK Key & Endpoint Configuration */}
+            {byokEnabled && (
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    3. {selectedProvider === 'google' ? 'Google Gemini' : selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'anthropic' ? 'Anthropic' : 'Provider'} API Key
+                  </label>
+                  {selectedProvider === 'google' && (
+                    <a 
+                      href="https://aistudio.google.com/app/apikey" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 font-semibold"
+                    >
+                      Get Key from Google AI Studio <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {selectedProvider === 'openai' && (
+                    <a 
+                      href="https://platform.openai.com/api-keys" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 flex items-center gap-1 font-semibold"
+                    >
+                      Get Key from OpenAI Platform <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {selectedProvider === 'anthropic' && (
+                    <a 
+                      href="https://console.anthropic.com/settings/keys" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1 font-semibold"
+                    >
+                      Get Key from Anthropic Console <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Key className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={byokApiKey}
+                    onChange={e => setByokApiKey(e.target.value)}
+                    placeholder={
+                      selectedProvider === 'google' 
+                        ? 'AIzaSy...' 
+                        : selectedProvider === 'openai' 
+                        ? 'sk-proj-... or sk-...' 
+                        : selectedProvider === 'anthropic' 
+                        ? 'sk-ant-api...' 
+                        : 'Enter custom API key'
+                    }
+                    className="w-full pl-10 pr-24 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-xs md:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                      title={showApiKey ? 'Hide Key' : 'Reveal Key'}
+                    >
+                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleTestConnection}
+                      disabled={testKeyStatus.loading}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {testKeyStatus.loading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                      Test
+                    </button>
+                  </div>
+                </div>
+
+                {/* Optional Custom Base URL */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                    Custom Base URL / Enterprise Endpoint (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={customEndpoint}
+                    onChange={e => setCustomEndpoint(e.target.value)}
+                    placeholder="https://api.openai.com/v1 or https://my-resource.openai.azure.com"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-xs md:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Connection Test Result Indicator */}
+                {testKeyStatus.result && (
+                  <div className={`p-3.5 rounded-xl border flex items-start gap-2.5 text-xs animate-in fade-in ${
+                    testKeyStatus.result.success
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                      : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+                  }`}>
+                    {testKeyStatus.result.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+                    )}
+                    <div>
+                      <span className="font-bold block">
+                        {testKeyStatus.result.success ? 'API Connection Verified!' : 'Connection Validation Failed'}
+                      </span>
+                      <p className="mt-0.5 leading-relaxed">{testKeyStatus.result.message}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Security Guarantee */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Your credentials are encrypted at rest using AES-256 and executed strictly within isolated Cloud Run backend workers. They are never sent to visitors or visible in client browsers.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Save Button */}
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSaveModelConfig}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all"
+              >
+                <Check className="w-4 h-4" />
+                Save AI Engine &amp; BYOK Configuration
+              </button>
+              {saveModelSuccess && (
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Saved successfully! Bot updated to {customModelName || selectedModel}.
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}

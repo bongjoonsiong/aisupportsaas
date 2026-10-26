@@ -128,6 +128,8 @@ export const LiveWidgetSimulator: React.FC<LiveWidgetSimulatorProps> = ({ onClos
           body: JSON.stringify({
             botId: PUBLIC_STOREFRONT_BOT.id,
             botName: PUBLIC_STOREFRONT_BOT.name,
+            provider: PUBLIC_STOREFRONT_BOT.aiConfig.provider || 'google',
+            model: PUBLIC_STOREFRONT_BOT.aiConfig.model || 'gemini-3.8-flash',
             systemPrompt: PUBLIC_STOREFRONT_BOT.aiConfig.systemPrompt,
             tone: PUBLIC_STOREFRONT_BOT.aiConfig.tone,
             creativity: PUBLIC_STOREFRONT_BOT.aiConfig.creativity,

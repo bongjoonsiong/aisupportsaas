@@ -201,7 +201,11 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...botData.theme
       },
       aiConfig: {
-        model: 'gemini-3.8-flash',
+        provider: botData.aiConfig?.provider || 'google',
+        model: botData.aiConfig?.model || 'gemini-3.8-flash',
+        byokEnabled: botData.aiConfig?.byokEnabled ?? false,
+        byokApiKey: botData.aiConfig?.byokApiKey || '',
+        customEndpoint: botData.aiConfig?.customEndpoint || '',
         systemPrompt: botData.aiConfig?.systemPrompt || `You are the helpful AI Assistant for ${botData.name || 'our company'}. Answer accurately using company docs.`,
         tone: botData.aiConfig?.tone || 'friendly',
         creativity: 0.3,
@@ -592,6 +596,12 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: JSON.stringify({
           botId: bot.id,
           botName: bot.name,
+          provider: bot.aiConfig.provider || 'google',
+          model: bot.aiConfig.model || 'gemini-3.8-flash',
+          customModelName: bot.aiConfig.customModelName,
+          byokEnabled: bot.aiConfig.byokEnabled || false,
+          byokApiKey: bot.aiConfig.byokApiKey,
+          customEndpoint: bot.aiConfig.customEndpoint,
           systemPrompt: bot.aiConfig.systemPrompt,
           tone: bot.aiConfig.tone,
           messages: updatedMsgs.map(m => ({ sender: m.sender, text: m.text })),
