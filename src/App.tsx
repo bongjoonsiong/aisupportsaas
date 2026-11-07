@@ -18,14 +18,16 @@ import { PublicFooter } from './components/landing/PublicFooter';
 import { LandingPage } from './components/landing/LandingPage';
 import { PricingPage } from './components/landing/PricingPage';
 import { SubscribeModal } from './components/billing/SubscribeModal';
+import { LegalPage, LegalTab } from './components/legal/LegalPage';
 import { Chatbot } from './types';
 
 function MainAppContent() {
   // Top-level View Mode: 'public' (Marketing Home & Pricing) vs 'dashboard' (Tenant Workspace)
   const [pageMode, setPageMode] = useState<'public' | 'dashboard'>('public');
   
-  // Public Marketing Tab: 'home' | 'pricing' | 'features' | 'demo'
-  const [publicTab, setPublicTab] = useState<'home' | 'pricing' | 'features' | 'demo'>('home');
+  // Public Marketing Tab: 'home' | 'pricing' | 'features' | 'demo' | 'legal'
+  const [publicTab, setPublicTab] = useState<'home' | 'pricing' | 'features' | 'demo' | 'legal'>('home');
+  const [legalTab, setLegalTab] = useState<LegalTab>('terms');
 
   // Tenant Dashboard Sub-view
   const [dashboardView, setDashboardView] = useState<NavTab>('bots');
@@ -90,6 +92,13 @@ function MainAppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenLegal = (tab: LegalTab = 'terms') => {
+    setPageMode('public');
+    setLegalTab(tab);
+    setPublicTab('legal');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col transition-colors duration-200">
       {pageMode === 'public' ? (
@@ -133,6 +142,19 @@ function MainAppContent() {
                 onOpenAuthModal={() => setShowAuthModal(true)}
                 onGoToDashboard={() => setPageMode('dashboard')}
               />
+            ) : publicTab === 'legal' ? (
+              <LegalPage
+                initialTab={legalTab}
+                onBackToHome={() => {
+                  setPublicTab('home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenPricing={() => {
+                  setPublicTab('pricing');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenAuthModal={() => setShowAuthModal(true)}
+              />
             ) : (
               <LandingPage
                 onSelectTab={(tab) => {
@@ -170,6 +192,7 @@ function MainAppContent() {
               setSimulatorBotOverride(undefined);
               setShowSimulator(true);
             }}
+            onOpenLegal={handleOpenLegal}
           />
         </div>
       ) : (
@@ -224,6 +247,7 @@ function MainAppContent() {
                 <SettingsPage
                   onOpenPricing={handleOpenPricingFromAnywhere}
                   onOpenSubscribeModal={(p) => handleSelectPlanToSubscribe(p, 'annual')}
+                  onOpenLegal={handleOpenLegal}
                 />
               )}
             </main>

@@ -5,12 +5,14 @@ interface PublicFooterProps {
   onSelectTab: (tab: 'home' | 'pricing' | 'features' | 'demo') => void;
   onOpenAuthModal: () => void;
   onOpenLiveSimulator: () => void;
+  onOpenLegal?: (tab: 'terms' | 'privacy' | 'security') => void;
 }
 
 export const PublicFooter: React.FC<PublicFooterProps> = ({
   onSelectTab,
   onOpenAuthModal,
-  onOpenLiveSimulator
+  onOpenLiveSimulator,
+  onOpenLegal
 }) => {
   return (
     <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 text-xs">
@@ -135,10 +137,25 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({
         <div>
           © {new Date().getFullYear()} OmniDesk AI Inc. All rights reserved. Multi-tenant autonomous support platform.
         </div>
-        <div className="flex items-center gap-6">
-          <span className="hover:text-slate-400 cursor-pointer">Privacy Policy</span>
-          <span className="hover:text-slate-400 cursor-pointer">Terms of Service</span>
-          <span className="hover:text-slate-400 cursor-pointer">Security Overview</span>
+        <div className="flex flex-wrap items-center gap-6">
+          <button 
+            onClick={() => onOpenLegal?.('privacy')}
+            className="hover:text-slate-300 transition-colors cursor-pointer"
+          >
+            Privacy Policy &amp; PDPA
+          </button>
+          <button 
+            onClick={() => onOpenLegal?.('terms')}
+            className="hover:text-slate-300 transition-colors cursor-pointer"
+          >
+            Terms of Service
+          </button>
+          <button 
+            onClick={() => onOpenLegal?.('security')}
+            className="hover:text-slate-300 transition-colors cursor-pointer"
+          >
+            Security &amp; BYOK Safety
+          </button>
         </div>
       </div>
     </footer>

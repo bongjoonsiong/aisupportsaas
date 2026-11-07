@@ -12,17 +12,22 @@ import {
   Plus, 
   Mail, 
   Sparkles,
-  Zap
+  Zap,
+  Scale,
+  FileText,
+  Lock
 } from 'lucide-react';
 
 interface SettingsPageProps {
   onOpenPricing?: () => void;
   onOpenSubscribeModal?: (plan: 'starter' | 'pro' | 'enterprise') => void;
+  onOpenLegal?: (tab: 'terms' | 'privacy' | 'security') => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ 
   onOpenPricing, 
-  onOpenSubscribeModal 
+  onOpenSubscribeModal,
+  onOpenLegal 
 }) => {
   const { currentOrg, updateOrg, user } = useAuth();
   const { chatbots, activeBot } = useBot();
@@ -252,6 +257,67 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               Hybrid keyword and vector semantic retrieval provides grounded, hallucination-free answers.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* 4. Legal Compliance & Regulatory */}
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <Scale className="w-5 h-5 text-blue-600" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">Legal Compliance &amp; PDPA</h3>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+            GDPR &amp; PDPA Compliant
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Your workspace operates under our enterprise Terms of Service and Personal Data Protection policies. All data is protected with zero public foundation model training.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('terms')}
+            className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-400 text-left transition-all group flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs mb-1">
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span>Terms of Service</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              AI output disclaimer, BYOK liability &amp; SLA terms.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('privacy')}
+            className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-400 text-left transition-all group flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs mb-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Privacy Policy &amp; PDPA</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Data processor rules, zero model training pledge &amp; erasure rights.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('security')}
+            className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 text-left transition-all group flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs mb-1">
+              <Lock className="w-4 h-4 text-indigo-600" />
+              <span>Security &amp; BYOK Isolation</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              AES-256 key encryption &amp; Cloud Run isolation details.
+            </p>
+          </button>
         </div>
       </div>
 

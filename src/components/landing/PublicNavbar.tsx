@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 interface PublicNavbarProps {
-  currentTab: 'home' | 'pricing' | 'features' | 'demo';
+  currentTab: 'home' | 'pricing' | 'features' | 'demo' | 'legal';
   onSelectTab: (tab: 'home' | 'pricing' | 'features' | 'demo') => void;
   onOpenAuthModal: () => void;
   onGoToDashboard: () => void;
