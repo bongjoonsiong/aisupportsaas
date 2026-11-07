@@ -17,7 +17,8 @@ import {
   Plus, 
   Circle,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  CloudCheck
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -246,6 +247,15 @@ export const Header: React.FC<HeaderProps> = ({
           <Circle className={`w-2 h-2 fill-current ${user?.isOnline ? 'text-emerald-500' : 'text-slate-400'}`} />
           <span className="hidden md:inline">{user?.isOnline ? t('header.onlineStatus') : t('header.awayStatus')}</span>
         </button>
+
+        {/* Cloud Firestore Sync Status Badge */}
+        <div 
+          title="Google Cloud Firestore Real-time Persistence Active" 
+          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-200/70 dark:border-blue-800/70 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-semibold"
+        >
+          <CloudCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span>Cloud Synced</span>
+        </div>
 
 
         {/* Escalation alert badge */}

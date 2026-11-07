@@ -24,6 +24,7 @@ export type KnowledgeType = 'url' | 'pdf' | 'faq' | 'text';
 export interface KnowledgeItem {
   id: string;
   botId: string;
+  orgId?: string;
   type: KnowledgeType;
   title: string;
   sourceUrl?: string;

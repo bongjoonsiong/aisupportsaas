@@ -20,7 +20,15 @@ import {
 } from '../data/defaultData';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
-import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  deleteDoc, 
+  query, 
+  where 
+} from 'firebase/firestore';
 
 interface BotContextType {
   chatbots: Chatbot[];
@@ -135,30 +143,139 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [chatbots, activeBot]);
 
-  // Re-synchronize tenant workspace data whenever the active organization or authentication changes (e.g. on logout)
+  // Real-time Cloud Firestore Subscriptions for the current organization
   useEffect(() => {
-    const savedBots = localStorage.getItem(`omnidesk_bots_${currentOrg.id}`);
-    const loadedBots: Chatbot[] = savedBots ? JSON.parse(savedBots) : DEFAULT_CHATBOTS;
-    setChatbots(loadedBots);
-    setActiveBot(loadedBots[0] || null);
+    if (!currentOrg?.id) return;
+    const orgId = currentOrg.id;
 
-    const savedKb = localStorage.getItem(`omnidesk_kb_${currentOrg.id}`);
-    const loadedKb: KnowledgeItem[] = savedKb ? JSON.parse(savedKb) : DEFAULT_KNOWLEDGE;
-    setKnowledgeList(loadedKb);
+    // 1. Subscribe to Chatbots
+    let unsubBots: (() => void) | undefined;
+    try {
+      const botsQuery = query(collection(db, 'chatbots'), where('orgId', '==', orgId));
+      unsubBots = onSnapshot(botsQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded = snapshot.docs.map(d => d.data() as Chatbot);
+          setChatbots(loaded);
+          localStorage.setItem(`omnidesk_bots_${orgId}`, JSON.stringify(loaded));
+          setActiveBot(prev => (prev && loaded.some(b => b.id === prev.id) ? loaded.find(b => b.id === prev.id)! : loaded[0] || null));
+        } else {
+          // If first-time org with no bots in Firestore yet, seed initial bots to Firestore
+          const savedBots = localStorage.getItem(`omnidesk_bots_${orgId}`);
+          const seedBots: Chatbot[] = savedBots ? JSON.parse(savedBots) : DEFAULT_CHATBOTS.map(b => ({ ...b, orgId }));
+          seedBots.forEach(b => {
+            setDoc(doc(db, 'chatbots', b.id), { ...b, orgId }, { merge: true }).catch(() => {});
+          });
+        }
+      }, (err) => {
+        console.warn('Firestore chatbots listener note (using local cache):', err.message);
+      });
+    } catch (e) {
+      console.warn('Firestore chatbots setup error:', e);
+    }
 
-    const savedConvs = localStorage.getItem(`omnidesk_convs_${currentOrg.id}`);
-    const loadedConvs: Conversation[] = savedConvs ? JSON.parse(savedConvs) : DEFAULT_CONVERSATIONS;
-    setConversations(loadedConvs);
-    setActiveConversation(loadedConvs[0] || null);
+    // 2. Subscribe to Knowledge Base
+    let unsubKb: (() => void) | undefined;
+    try {
+      const kbQuery = query(collection(db, 'knowledge'), where('orgId', '==', orgId));
+      unsubKb = onSnapshot(kbQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded = snapshot.docs.map(d => d.data() as KnowledgeItem);
+          setKnowledgeList(loaded);
+          localStorage.setItem(`omnidesk_kb_${orgId}`, JSON.stringify(loaded));
+        } else {
+          const savedKb = localStorage.getItem(`omnidesk_kb_${orgId}`);
+          const seedKb: KnowledgeItem[] = savedKb ? JSON.parse(savedKb) : DEFAULT_KNOWLEDGE.map(k => ({ ...k, orgId }));
+          seedKb.forEach(k => {
+            setDoc(doc(db, 'knowledge', k.id), { ...k, orgId }, { merge: true }).catch(() => {});
+          });
+        }
+      }, (err) => {
+        console.warn('Firestore knowledge listener note (using local cache):', err.message);
+      });
+    } catch (e) {
+      console.warn('Firestore knowledge setup error:', e);
+    }
 
-    const savedMsgs = localStorage.getItem(`omnidesk_msgs_${currentOrg.id}`);
-    const loadedMsgs = savedMsgs ? JSON.parse(savedMsgs) : DEFAULT_MESSAGES;
-    setAllMessages(loadedMsgs);
+    // 3. Subscribe to Leads
+    let unsubLeads: (() => void) | undefined;
+    try {
+      const leadsQuery = query(collection(db, 'leads'), where('orgId', '==', orgId));
+      unsubLeads = onSnapshot(leadsQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded = snapshot.docs.map(d => d.data() as CapturedLead);
+          loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setLeads(loaded);
+          localStorage.setItem(`omnidesk_leads_${orgId}`, JSON.stringify(loaded));
+        } else {
+          const savedLeads = localStorage.getItem(`omnidesk_leads_${orgId}`);
+          const seedLeads: CapturedLead[] = savedLeads ? JSON.parse(savedLeads) : DEFAULT_LEADS.map(l => ({ ...l, orgId }));
+          seedLeads.forEach(l => {
+            setDoc(doc(db, 'leads', l.id), { ...l, orgId }, { merge: true }).catch(() => {});
+          });
+        }
+      }, (err) => {
+        console.warn('Firestore leads listener note (using local cache):', err.message);
+      });
+    } catch (e) {
+      console.warn('Firestore leads setup error:', e);
+    }
 
-    const savedLeads = localStorage.getItem(`omnidesk_leads_${currentOrg.id}`);
-    const loadedLeads = savedLeads ? JSON.parse(savedLeads) : DEFAULT_LEADS;
-    setLeads(loadedLeads);
-  }, [currentOrg.id, user?.uid]);
+    // 4. Subscribe to Conversations
+    let unsubConvs: (() => void) | undefined;
+    try {
+      const convsQuery = query(collection(db, 'conversations'), where('orgId', '==', orgId));
+      unsubConvs = onSnapshot(convsQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded = snapshot.docs.map(d => d.data() as Conversation);
+          loaded.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+          setConversations(loaded);
+          localStorage.setItem(`omnidesk_convs_${orgId}`, JSON.stringify(loaded));
+          setActiveConversation(prev => (prev && loaded.some(c => c.id === prev.id) ? loaded.find(c => c.id === prev.id)! : loaded[0] || null));
+        }
+      }, (err) => {
+        console.warn('Firestore conversations listener note (using local cache):', err.message);
+      });
+    } catch (e) {
+      console.warn('Firestore conversations setup error:', e);
+    }
+
+    return () => {
+      unsubBots?.();
+      unsubKb?.();
+      unsubLeads?.();
+      unsubConvs?.();
+    };
+  }, [currentOrg.id]);
+
+  // Real-time Cloud Firestore Listener for Messages in active conversation
+  useEffect(() => {
+    if (!activeConversation?.id) return;
+    const convId = activeConversation.id;
+
+    let unsubMsgs: (() => void) | undefined;
+    try {
+      const msgsQuery = query(collection(db, 'messages'), where('conversationId', '==', convId));
+      unsubMsgs = onSnapshot(msgsQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const loadedMsgs = snapshot.docs.map(d => d.data() as ChatMessage);
+          loadedMsgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          setAllMessages(prev => {
+            const updated = { ...prev, [convId]: loadedMsgs };
+            localStorage.setItem(`omnidesk_msgs_${currentOrg.id}`, JSON.stringify(updated));
+            return updated;
+          });
+        }
+      }, (err) => {
+        console.warn('Firestore messages listener note:', err.message);
+      });
+    } catch (e) {
+      console.warn('Firestore messages setup error:', e);
+    }
+
+    return () => {
+      unsubMsgs?.();
+    };
+  }, [activeConversation?.id, currentOrg.id]);
 
   // Derived current conversation messages
   const conversationMessages = activeConversation ? (allMessages[activeConversation.id] || []) : [];
@@ -241,6 +358,7 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const starterFaq: KnowledgeItem = {
       id: `kb_starter_${Date.now()}`,
       botId: newBotId,
+      orgId: currentOrg.id,
       type: 'faq',
       title: `${newBot.name} Core FAQ Guide`,
       content: JSON.stringify([
@@ -257,6 +375,18 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setKnowledgeList(prev => [starterFaq, ...prev]);
 
+    // Persist to Cloud Firestore
+    try {
+      setDoc(doc(db, 'chatbots', newBot.id), newBot, { merge: true }).catch(err => {
+        console.warn('Firestore chatbot create error:', err);
+      });
+      setDoc(doc(db, 'knowledge', starterFaq.id), starterFaq, { merge: true }).catch(err => {
+        console.warn('Firestore starter FAQ create error:', err);
+      });
+    } catch (e) {
+      console.warn('Firestore sync warning:', e);
+    }
+
     return newBot;
   };
 
@@ -268,6 +398,13 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const updated = { ...bot, ...updates, updatedAt: new Date().toISOString() };
           if (activeBot?.id === botId) {
             setActiveBot(updated);
+          }
+          try {
+            setDoc(doc(db, 'chatbots', botId), updated, { merge: true }).catch(err => {
+              console.warn('Firestore chatbot update error:', err);
+            });
+          } catch (e) {
+            console.warn('Firestore sync warning:', e);
           }
           return updated;
         }
@@ -283,6 +420,13 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeBot?.id === botId) {
       setActiveBot(updated[0] || null);
     }
+    try {
+      deleteDoc(doc(db, 'chatbots', botId)).catch(err => {
+        console.warn('Firestore chatbot delete error:', err);
+      });
+    } catch (e) {
+      console.warn('Firestore sync warning:', e);
+    }
   };
 
   // Add Knowledge Item
@@ -290,10 +434,19 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newItem: KnowledgeItem = {
       ...item,
       id: `kb_${Date.now()}`,
+      orgId: currentOrg.id,
       status: 'indexed',
       updatedAt: new Date().toISOString()
     };
     setKnowledgeList(prev => [newItem, ...prev]);
+
+    try {
+      setDoc(doc(db, 'knowledge', newItem.id), newItem, { merge: true }).catch(err => {
+        console.warn('Firestore knowledge add error:', err);
+      });
+    } catch (e) {
+      console.warn('Firestore sync warning:', e);
+    }
 
     // Update chatbot knowledge count
     if (item.botId) {
@@ -306,6 +459,13 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Delete Knowledge Item
   const deleteKnowledgeItem = async (itemId: string) => {
     setKnowledgeList(prev => prev.filter(k => k.id !== itemId));
+    try {
+      deleteDoc(doc(db, 'knowledge', itemId)).catch(err => {
+        console.warn('Firestore knowledge delete error:', err);
+      });
+    } catch (e) {
+      console.warn('Firestore sync warning:', e);
+    }
   };
 
   // Auto-generate FAQs using Gemini
@@ -413,6 +573,12 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setActiveConversation(updatedConv);
     setConversations(prev => prev.map(c => c.id === activeConversation.id ? updatedConv : c));
+
+    // Persist to Cloud Firestore
+    try {
+      setDoc(doc(db, 'messages', agentMsg.id), agentMsg, { merge: true }).catch(() => {});
+      setDoc(doc(db, 'conversations', activeConversation.id), updatedConv, { merge: true }).catch(() => {});
+    } catch (_) {}
   };
 
   // Agent Takeover
@@ -447,6 +613,12 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeConversation?.id === convId) {
       setActiveConversation(updated);
     }
+
+    // Persist to Cloud Firestore
+    try {
+      setDoc(doc(db, 'messages', sysMsg.id), sysMsg, { merge: true }).catch(() => {});
+      setDoc(doc(db, 'conversations', convId), updated, { merge: true }).catch(() => {});
+    } catch (_) {}
   };
 
   // Release conversation back to AI Bot
@@ -479,6 +651,12 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeConversation?.id === convId) {
       setActiveConversation(updated);
     }
+
+    // Persist to Cloud Firestore
+    try {
+      setDoc(doc(db, 'messages', sysMsg.id), sysMsg, { merge: true }).catch(() => {});
+      setDoc(doc(db, 'conversations', convId), updated, { merge: true }).catch(() => {});
+    } catch (_) {}
   };
 
   // Mark Conversation as Resolved
@@ -510,6 +688,12 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeConversation?.id === convId) {
       setActiveConversation(updated);
     }
+
+    // Persist to Cloud Firestore
+    try {
+      setDoc(doc(db, 'messages', sysMsg.id), sysMsg, { merge: true }).catch(() => {});
+      setDoc(doc(db, 'conversations', convId), updated, { merge: true }).catch(() => {});
+    } catch (_) {}
   };
 
   // Send message as Visitor (used in Live Widget & Emulator)
@@ -579,6 +763,14 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    // Persist visitor message and conversation to Cloud Firestore
+    try {
+      setDoc(doc(db, 'messages', visitorMsg.id), visitorMsg, { merge: true }).catch(() => {});
+      if (existingConv) {
+        setDoc(doc(db, 'conversations', existingConv.id), existingConv, { merge: true }).catch(() => {});
+      }
+    } catch (_) {}
+
     // If a human agent is currently handling this conversation, don't auto-reply with bot
     if (existingConv && existingConv.status === 'agent_handling') {
       return visitorMsg;
@@ -636,6 +828,11 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         [targetConvId]: [...(prev[targetConvId] || []), botReplyMsg]
       }));
 
+      // Persist bot reply to Cloud Firestore
+      try {
+        setDoc(doc(db, 'messages', botReplyMsg.id), botReplyMsg, { merge: true }).catch(() => {});
+      } catch (_) {}
+
       // If lead was captured, save lead record
       if (aiData.capturedLead && (aiData.capturedLead.email || aiData.capturedLead.name)) {
         const newLead: CapturedLead = {
@@ -655,6 +852,9 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           summary: `Lead captured via ${bot.name} conversation.`
         };
         setLeads(prev => [newLead, ...prev]);
+        try {
+          setDoc(doc(db, 'leads', newLead.id), newLead, { merge: true }).catch(() => {});
+        } catch (_) {}
       }
 
       // Update conversation status if handoff was requested
@@ -674,6 +874,9 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (activeConversation?.id === targetConvId) {
           setActiveConversation(handoffConv);
         }
+        try {
+          setDoc(doc(db, 'conversations', targetConvId), handoffConv, { merge: true }).catch(() => {});
+        } catch (_) {}
       }
 
       return botReplyMsg;
@@ -691,6 +894,9 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         [targetConvId]: [...(prev[targetConvId] || []), fallbackReply]
       }));
+      try {
+        setDoc(doc(db, 'messages', fallbackReply.id), fallbackReply, { merge: true }).catch(() => {});
+      } catch (_) {}
       return fallbackReply;
     } finally {
       setIsAiGenerating(false);
@@ -700,6 +906,9 @@ export const BotProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Update lead status
   const updateLeadStatus = (leadId: string, status: CapturedLead['status']) => {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
+    try {
+      setDoc(doc(db, 'leads', leadId), { status }, { merge: true }).catch(() => {});
+    } catch (_) {}
   };
 
   return (

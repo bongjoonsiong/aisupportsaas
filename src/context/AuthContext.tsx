@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, Organization, UserRole } from '../types';
 import { DEFAULT_ORG } from '../data/defaultData';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -41,21 +42,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Listen for Firebase Auth state changes
+    // Listen for Firebase Auth state changes and sync with Cloud Firestore
     try {
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
-          const profile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || 'user@example.com',
-            displayName: firebaseUser.displayName || (firebaseUser.email?.split('@')[0] ?? 'Agent'),
-            avatarUrl: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
-            role: 'owner',
-            orgId: currentOrg.id,
-            isOnline: true,
-          };
-          setUser(profile);
-          localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+          try {
+            // Attempt to retrieve profile from Firestore
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userSnap = await getDoc(userDocRef);
+
+            if (userSnap.exists()) {
+              const loadedUser = userSnap.data() as UserProfile;
+              setUser(loadedUser);
+              localStorage.setItem('omnidesk_user', JSON.stringify(loadedUser));
+
+              if (loadedUser.orgId) {
+                const orgDocRef = doc(db, 'organizations', loadedUser.orgId);
+                const orgSnap = await getDoc(orgDocRef);
+                if (orgSnap.exists()) {
+                  const loadedOrg = orgSnap.data() as Organization;
+                  setCurrentOrg(loadedOrg);
+                  localStorage.setItem('omnidesk_org', JSON.stringify(loadedOrg));
+                }
+              }
+            } else {
+              // Create user record in Firestore if not existing
+              const newOrgId = `org_${firebaseUser.uid.slice(0, 10)}`;
+              const newOrg: Organization = {
+                id: newOrgId,
+                name: firebaseUser.displayName ? `${firebaseUser.displayName}'s Team` : 'My Organization',
+                slug: (firebaseUser.displayName || 'workspace').toLowerCase().replace(/\s+/g, '-'),
+                plan: 'pro',
+                createdAt: new Date().toISOString(),
+                membersCount: 1,
+              };
+              const profile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || 'user@example.com',
+                displayName: firebaseUser.displayName || (firebaseUser.email?.split('@')[0] ?? 'Agent'),
+                avatarUrl: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+                role: 'owner',
+                orgId: newOrgId,
+                isOnline: true,
+              };
+
+              setUser(profile);
+              setCurrentOrg(newOrg);
+              localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+              localStorage.setItem('omnidesk_org', JSON.stringify(newOrg));
+
+              // Persist to Cloud Firestore
+              await setDoc(doc(db, 'organizations', newOrgId), newOrg, { merge: true });
+              await setDoc(userDocRef, profile, { merge: true });
+            }
+          } catch (fsErr) {
+            console.warn('Firestore user fetch fallback to local state:', fsErr);
+            const profile: UserProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || 'user@example.com',
+              displayName: firebaseUser.displayName || (firebaseUser.email?.split('@')[0] ?? 'Agent'),
+              avatarUrl: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+              role: 'owner',
+              orgId: currentOrg.id,
+              isOnline: true,
+            };
+            setUser(profile);
+            localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+          }
         }
       });
       return () => unsubscribe();
@@ -68,6 +121,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await signInWithEmailAndPassword(auth, email, pass);
+      try {
+        const userDocRef = doc(db, 'users', res.user.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const profile = userSnap.data() as UserProfile;
+          setUser(profile);
+          localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+          if (profile.orgId) {
+            const orgDoc = await getDoc(doc(db, 'organizations', profile.orgId));
+            if (orgDoc.exists()) {
+              const org = orgDoc.data() as Organization;
+              setCurrentOrg(org);
+              localStorage.setItem('omnidesk_org', JSON.stringify(org));
+            }
+          }
+          return;
+        }
+      } catch (dbErr) {
+        console.warn('Firestore login fetch warning:', dbErr);
+      }
+
       const profile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email || email,
@@ -79,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       setUser(profile);
       localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+      setDoc(doc(db, 'users', res.user.uid), profile, { merge: true }).catch(() => {});
     } catch (error) {
       // Fallback for demo sign-in
       const demoProfile: UserProfile = {
@@ -101,8 +176,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await createUserWithEmailAndPassword(auth, email, pass);
+      const newOrgId = `org_${Date.now()}`;
       const newOrg: Organization = {
-        id: `org_${Date.now()}`,
+        id: newOrgId,
         name: orgName || `${name}'s Workspace`,
         slug: (orgName || name).toLowerCase().replace(/\s+/g, '-'),
         plan: 'pro',
@@ -122,6 +198,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(profile);
       localStorage.setItem('omnidesk_org', JSON.stringify(newOrg));
       localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+
+      // Save to Cloud Firestore
+      try {
+        await setDoc(doc(db, 'organizations', newOrgId), newOrg, { merge: true });
+        await setDoc(doc(db, 'users', res.user.uid), profile, { merge: true });
+      } catch (fsErr) {
+        console.warn('Firestore signup sync warning:', fsErr);
+      }
     } catch (error) {
       // Fallback local registration
       const newOrg: Organization = {
@@ -155,17 +239,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const provider = new GoogleAuthProvider();
       const res = await signInWithPopup(auth, provider);
+      
+      try {
+        const userDocRef = doc(db, 'users', res.user.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const profile = userSnap.data() as UserProfile;
+          setUser(profile);
+          localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+          if (profile.orgId) {
+            const orgDoc = await getDoc(doc(db, 'organizations', profile.orgId));
+            if (orgDoc.exists()) {
+              const org = orgDoc.data() as Organization;
+              setCurrentOrg(org);
+              localStorage.setItem('omnidesk_org', JSON.stringify(org));
+            }
+          }
+          return;
+        }
+      } catch (dbErr) {
+        console.warn('Firestore Google login check warning:', dbErr);
+      }
+
+      const newOrgId = `org_${res.user.uid.slice(0, 10)}`;
+      const newOrg: Organization = {
+        id: newOrgId,
+        name: `${res.user.displayName || 'Google User'}'s Team`,
+        slug: (res.user.displayName || 'google').toLowerCase().replace(/\s+/g, '-'),
+        plan: 'pro',
+        createdAt: new Date().toISOString(),
+        membersCount: 1,
+      };
+
       const profile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email || 'user@gmail.com',
         displayName: res.user.displayName || 'Google User',
         avatarUrl: res.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${res.user.uid}`,
         role: 'owner',
-        orgId: currentOrg.id,
+        orgId: newOrgId,
         isOnline: true,
       };
       setUser(profile);
+      setCurrentOrg(newOrg);
       localStorage.setItem('omnidesk_user', JSON.stringify(profile));
+      localStorage.setItem('omnidesk_org', JSON.stringify(newOrg));
+
+      setDoc(doc(db, 'organizations', newOrgId), newOrg, { merge: true }).catch(() => {});
+      setDoc(doc(db, 'users', res.user.uid), profile, { merge: true }).catch(() => {});
     } catch (e) {
       console.warn('Google Auth popup closed or fallback triggered', e);
       // Demo Google Profile
@@ -233,6 +354,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = { ...currentOrg, ...partial };
     setCurrentOrg(updated);
     localStorage.setItem('omnidesk_org', JSON.stringify(updated));
+    try {
+      setDoc(doc(db, 'organizations', currentOrg.id), updated, { merge: true }).catch((e) => {
+        console.warn('Firestore updateOrg sync warning:', e);
+      });
+    } catch (e) {
+      console.warn('Firestore updateOrg sync warning:', e);
+    }
   };
 
   return (
